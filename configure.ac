@@ -6,7 +6,7 @@ AC_PREREQ([2.69])
 # Get version information from git.
 m4_define([GIT_VERSION_STRING], m4_esyscmd([git describe --tags | sed 's/\(.*\)-.*/\1/' | tr -d '\n']))
 
-AC_INIT([vsquery], [GIT_VERSION_STRING], [t.stibor@gsi.de], [], [https://github.com/tstibor/vsquery])
+AC_INIT([vsquery], [GIT_VERSION_STRING], [thomas@stibor.net], [], [https://github.com/tstibor/vsquery])
 AM_INIT_AUTOMAKE
 
 AC_CONFIG_SRCDIR([src/vsquery.c])

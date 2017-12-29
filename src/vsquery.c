@@ -16,6 +16,10 @@
  * Copyright (c) 2017 Thomas Stibor <thomas@stibor.net>
  */
 
+#if HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
@@ -321,9 +325,37 @@ static void display_lunar(const double julian_date, struct ln_lnlat_posn *observ
 		ln_get_local_date(rst_lunar.rise, &rise);
 		ln_get_local_date(rst_lunar.transit, &transit);
 		ln_get_local_date(rst_lunar.set, &set);
-		print_date("rise            :", &rise);
-		print_date("transit         :", &transit);
-		print_date("set             :", &set);
+
+		if (rst_lunar.rise < rst_lunar.transit &&
+		    rst_lunar.rise < rst_lunar.set) {
+			print_date("↑ rise\t\t:", &rise);
+			if (rst_lunar.transit < rst_lunar.set) {
+				print_date("↔ transit\t:", &transit);
+				print_date("↓ set\t\t:", &set);
+			} else {
+				print_date("↓ set\t\t:", &set);
+				print_date("↔ transit\t:", &transit);
+			}
+		} else if (rst_lunar.set < rst_lunar.rise &&
+			   rst_lunar.set < rst_lunar.transit) {
+			print_date("↓ set\t\t:", &set);
+			if (rst_lunar.rise < rst_lunar.transit) {
+				print_date("↑ rise\t\t:", &rise);
+				print_date("↔ transit\t:", &transit);
+			} else {
+				print_date("↔ transit\t:", &transit);
+				print_date("↑ rise\t\t:", &rise);
+			}
+		} else {
+			print_date("↔ transit\t:", &transit);
+			if (rst_lunar.set < rst_lunar.rise) {
+				print_date("↓ set\t\t:", &set);
+				print_date("↑ rise\t\t:", &rise);
+			} else {
+				print_date("↑ rise\t\t:", &rise);
+				print_date("↓ set\t\t:", &set);
+			}
+		}
 	}
 
 	fprintf(stdout, "disk            : %f (illuminated fraction of the moons disk, value between 0 and 1)\n", ln_get_lunar_disk(julian_date));
@@ -369,8 +401,13 @@ static void display_sun(const double julian_date, struct ln_lnlat_posn *observer
 	ln_get_local_date(rst_a_tw.rise, &rise_a);
 	ln_get_local_date(rst_a_tw.set, &set_a);
 
-	print_date("set             :", &set_sun);
-	print_date("rise            :", &rise_sun);
+	if (rst_sun.set < rst_sun.rise) {
+		print_date("↓ set\t\t:", &set_sun);
+		print_date("↑ rise\t\t:", &rise_sun);
+	} else {
+		print_date("↑ rise\t\t:", &rise_sun);
+		print_date("↓ set\t\t:", &set_sun);
+	}
 
 	print_date("twilight amateur astro. begin     :", &set_aa);
 	print_date("twilight professional astro. begin:", &set_a);
@@ -408,10 +445,36 @@ static void display_object(struct ln_equ_posn *equ_object,
 			ln_get_local_date(rst_object.transit, &transit);
 			ln_get_local_date(rst_object.set, &set);
 
-			print_date("set    :", &set);
-			print_date("rise   :", &rise);
-			print_date("transit:", &transit);
-
+			if (rst_object.rise < rst_object.transit &&
+			    rst_object.rise < rst_object.set) {
+				print_date("↑ rise   :", &rise);
+				if (rst_object.transit < rst_object.set) {
+					print_date("↔ transit:", &transit);
+					print_date("↓ set    :", &set);
+				} else {
+					print_date("↓ set    :", &set);
+					print_date("↔ transit:", &transit);
+				}
+			} else if (rst_object.set < rst_object.rise &&
+				   rst_object.set < rst_object.transit) {
+				print_date("↓ set    :", &set);
+				if (rst_object.rise < rst_object.transit) {
+					print_date("↑ rise   :", &rise);
+					print_date("↔ transit:", &transit);
+				} else {
+					print_date("↔ transit:", &transit);
+					print_date("↑ rise   :", &rise);
+				}
+			} else {
+				print_date("↔ transit:", &transit);
+				if (rst_object.set < rst_object.rise) {
+					print_date("↓ set    :", &set);
+					print_date("↑ rise   :", &rise);
+				} else {
+					print_date("↑ rise   :", &rise);
+					print_date("↓ set    :", &set);
+				}
+			}
 			break;
 		}
 	}
@@ -420,7 +483,8 @@ static void display_object(struct ln_equ_posn *equ_object,
 	struct ln_zonedate date;
 	struct ln_equ_posn equ_lunar;
 
-	fprintf(stdout, "azimuth     altitude\tdate\t   time\t\tmoon separation\n");
+	if (rise_set->rst_sun.set < rise_set->rst_sun.rise)
+		fprintf(stdout, "\nazimuth     altitude\tdate\t   time\t\tmoon separation\n");
 	for (double jd = rise_set->rst_sun.set; jd < rise_set->rst_sun.rise; jd += 0.01) {
 		ln_get_local_date(jd, &date);
 		ln_get_hrz_from_equ(equ_object, observer, jd, &hrz_posn);
