@@ -430,6 +430,7 @@ static void display_object(struct ln_equ_posn *equ_object,
 
 	rc = ln_get_object_next_rst(julian_date, observer, equ_object, &rst_object);
 	fprintf(stdout, "#### object %s ####\n", object);
+	fprintf(stdout, "(ra,dec) : (%f,%f) J2000\n", equ_object->ra, equ_object->dec);
 	switch (rc) {
 		case -1 : {
 			fprintf(stdout, "object remains the whole day bellow the horizon\n");
