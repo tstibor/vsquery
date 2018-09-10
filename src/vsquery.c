@@ -37,6 +37,7 @@
 #include <libnova/transform.h>
 #include <libnova/utility.h>
 #include <libnova/angular_separation.h>
+#include <libnova/airmass.h>
 
 #ifndef PACKAGE_VERSION
 #define PACKAGE_VERSION "NA"
@@ -427,6 +428,7 @@ static void display_object(struct ln_equ_posn *equ_object,
 	int rc;
 	struct ln_zonedate rise, set, transit;
 	struct ln_rst_time rst_object;
+	bool not_visible = false;
 
 	rc = ln_get_object_next_rst(julian_date, observer, equ_object, &rst_object);
 	fprintf(stdout, "#### object %s ####\n", object);
@@ -434,6 +436,7 @@ static void display_object(struct ln_equ_posn *equ_object,
 	switch (rc) {
 		case -1 : {
 			fprintf(stdout, "object remains the whole day bellow the horizon\n");
+			not_visible = true;
 			break;
 		}
 		case 1: {
@@ -480,23 +483,30 @@ static void display_object(struct ln_equ_posn *equ_object,
 		}
 	}
 
+	if (not_visible)
+		return;
+
 	struct ln_hrz_posn hrz_posn;
 	struct ln_zonedate date;
 	struct ln_equ_posn equ_lunar;
+	double jd = rise_set->rst_sun.set;
 
-	if (rise_set->rst_sun.set < rise_set->rst_sun.rise)
-		fprintf(stdout, "\nazimuth     altitude\tdate\t   time\t\tmoon separation\n");
-	for (double jd = rise_set->rst_sun.set; jd < rise_set->rst_sun.rise; jd += 0.01) {
+	fprintf(stdout, "\nairmass\tazimuth\taltitude  date\t     time\tmoon separation\n");
+	while (jd < rise_set->rst_sun.rise) {
 		ln_get_local_date(jd, &date);
 		ln_get_hrz_from_equ(equ_object, observer, jd, &hrz_posn);
 		ln_get_lunar_equ_coords(jd, &equ_lunar);
-		fprintf(stdout, "%8.4f %10.4f\t"
-			"%d-%02d-%02d %02d:%02d:%02d"
-			"\t%f (degrees)\n", hrz_posn.az, hrz_posn.alt,
+		if (hrz_posn.alt > 0)
+		fprintf(stdout, "%2.2f \t%4.2f \t%4.2f\t"
+			"%6d-%02d-%02d %02d:%02d:%02d"
+			"\t%f (degrees)\n",
+			ln_get_airmass(hrz_posn.alt, 750.0),
+			hrz_posn.az, hrz_posn.alt,
 			date.years, date.months, date.days,
 			date.hours, date.minutes, (int)date.seconds,
 			ln_get_angular_separation(equ_object, &equ_lunar));
-	}
+		jd += 0.01;
+	};
 }
 
 int main(int argc, char *argv[])
