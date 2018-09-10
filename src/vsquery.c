@@ -168,23 +168,23 @@ static int parse_date(const char *str, struct ln_date *date)
 	char *token = NULL;
 	uint8_t w_token = 0;
 
-	struct tm *gmt;
+	struct tm *ltime;
 	struct timeval tv;
 	struct timezone tz;
 
 	/* Get current time with microseconds precission. */
 	gettimeofday(&tv, &tz);
 
-	/* Convert to UTC time representation. */
-	gmt = gmtime(&tv.tv_sec);
+	/* Convert to localtime representation. */
+	ltime = localtime(&tv.tv_sec);
 
 	/* Fill in date struct. */
-	date->seconds = gmt->tm_sec + ((double)tv.tv_usec / 1000000);
-	date->minutes = gmt->tm_min;
-	date->hours = gmt->tm_hour;
-	date->days = gmt->tm_mday;
-	date->months = gmt->tm_mon + 1;
-	date->years = gmt->tm_year + 1900;
+	date->seconds = ltime->tm_sec + ((double)tv.tv_usec / 1000000);
+	date->minutes = ltime->tm_min;
+	date->hours = ltime->tm_hour;
+	date->days = ltime->tm_mday;
+	date->months = ltime->tm_mon + 1;
+	date->years = ltime->tm_year + 1900;
 
 	if (str == NULL || strlen(str) == 0)
 		return 0;
@@ -535,7 +535,7 @@ int main(int argc, char *argv[])
 	fprintf(stdout, "##### date #####\n"
 		"julian          : %f\n", julian_date);
 	fprintf(stdout, "%s %d-%02d-%02d %02d:%02d:%02d\n",
-		"calendar        :",
+		"calendar (LT)   :",
 		date.years, date.months, date.days,
 		date.hours, date.minutes, (int)date.seconds);
 
