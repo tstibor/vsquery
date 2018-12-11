@@ -226,7 +226,7 @@ static int get_ra_dec(const char *str, double *ra, double *dec)
 	while (token != NULL) {
 		const char *begin_str = NULL;
 
-		begin_str = strstr(token, "#=N=NED:");
+		begin_str = strstr(token, "#=N=NED");
 		if (begin_str)
 			found[0] = 1;
 		else {
