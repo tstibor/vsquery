@@ -317,8 +317,7 @@ static void display_lunar(const double julian_date, struct ln_lnlat_posn *observ
 
 	fprintf(stdout, "##### moon #####\n");
 
-	rc = ln_get_body_next_rst_horizon(julian_date, observer, ln_get_lunar_equ_coords,
-					  LN_LUNAR_STANDART_HORIZON, &rst_lunar);
+	rc = ln_get_lunar_rst(julian_date, observer, &rst_lunar);
 	if (rc) {
 		fprintf(stdout, "moon is circumpolar, that is it remains the whole "
 			"day either above or below the horizon\n");
