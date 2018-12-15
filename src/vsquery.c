@@ -428,10 +428,16 @@ static void display_object(struct ln_equ_posn *equ_object,
 	struct ln_zonedate rise, set, transit;
 	struct ln_rst_time rst_object;
 	bool not_visible = false;
+	struct lnh_equ_posn hpos;
 
 	rc = ln_get_object_next_rst(julian_date, observer, equ_object, &rst_object);
+	ln_equ_to_hequ(equ_object, &hpos);
 	fprintf(stdout, "#### object %s ####\n", object);
-	fprintf(stdout, "(ra,dec) : (%f,%f) J2000\n", equ_object->ra, equ_object->dec);
+	fprintf(stdout, "(ra, dec) : (%f, %f) (%d:%d:%.3f, %c%d:%d:%.3f) J2000\n",
+		equ_object->ra, equ_object->dec,
+		hpos.ra.hours, hpos.ra.minutes, hpos.ra.seconds,
+		hpos.dec.neg ? '-' : '+',
+		hpos.dec.degrees, hpos.dec.minutes, hpos.dec.seconds);
 	switch (rc) {
 		case -1 : {
 			fprintf(stdout, "object remains the whole day bellow the horizon\n");
