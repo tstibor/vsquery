@@ -44,12 +44,12 @@
 #endif
 
 #define QUERY_URL "http://cdsweb.u-strasbg.fr/cgi-bin/nph-sesame/-oI/A?"
-
 #define MAX_DATE_LEN 10
 
 struct options {
 	float o_lat;
 	float o_lng;
+	float o_step_jd;
 	char o_date[MAX_DATE_LEN + 1];
 };
 
@@ -57,6 +57,7 @@ struct options opt = {
 	/* Bad Soden am Taunus */
 	.o_lat = 50.146146,
 	.o_lng = 8.498569,
+	.o_step_jd = 0.01,
 	.o_date = {0}
 };
 
@@ -79,9 +80,11 @@ static void usage(const char *cmd_name, const int rc)
                 "\t-o, --longitude <float>\n"
                 "\t       Longitude coordinate in decimal degree [default: %f]\n"
                 "\t-d, --date <string>\n"
-                "\t       Date in format yyyy-mm-dd, e.g. '2017-06-30' [default: current date and time]\n"
+                "\t       Date in format yyyy-mm-dd, e.g. '2017-06-30' [default: current date]\n"
+		"\t-s, --stepjd <float>\n"
+		"\t       Partition tabular data by step size in julian date [default: %.2f]\n"
                 "version: %s © 2017 by Thomas Stibor <thomas@stibor.net>\n",
-                cmd_name, opt.o_lat, opt.o_lng, PACKAGE_VERSION);
+                cmd_name, opt.o_lat, opt.o_lng, opt.o_step_jd, PACKAGE_VERSION);
         exit(rc);
 }
 
@@ -91,12 +94,13 @@ static int parseopts(int argc, char *argv[])
 		{"latitude",  required_argument, 0, 'a'},
 		{"longitude", required_argument, 0, 'o'},
 		{"date",      required_argument, 0, 'd'},
+		{"step_jd",   required_argument, 0, 's'},
 		{"help",      no_argument, 0,	    'h'},
 		{0, 0, 0, 0}
 	};
 
 	int c;
-	while ((c = getopt_long(argc, argv, "a:o:d:h",
+	while ((c = getopt_long(argc, argv, "a:o:d:s:h",
 				long_opts, NULL)) != -1) {
 		switch (c) {
 		case 'a': {
@@ -109,6 +113,10 @@ static int parseopts(int argc, char *argv[])
 		}
 		case 'd': {
 			strncpy(opt.o_date, optarg, MAX_DATE_LEN);
+			break;
+		}
+		case 's': {
+			opt.o_step_jd = atof(optarg);
 			break;
 		}
 		case 'h': {
@@ -491,6 +499,9 @@ static void display_object(struct ln_equ_posn *equ_object,
 	if (not_visible)
 		return;
 
+	if (opt.o_step_jd <= 0)
+		return;
+
 	struct ln_hrz_posn hrz_posn;
 	struct ln_zonedate date;
 	struct ln_equ_posn equ_lunar;
@@ -510,7 +521,7 @@ static void display_object(struct ln_equ_posn *equ_object,
 			date.years, date.months, date.days,
 			date.hours, date.minutes, (int)date.seconds,
 			ln_get_angular_separation(equ_object, &equ_lunar));
-		jd += 0.01;
+		jd += opt.o_step_jd;
 	};
 }
 
