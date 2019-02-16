@@ -598,7 +598,7 @@ int main(int argc, char *argv[])
 
 	line_top("observer", "┌", "┐");
 	fprintf(stdout,
-		"│%-83s%f,%f│\n", "lat,lng", observer.lat, observer.lng);
+		"│%-80s%10.6f,%10.6f│\n", "lat,lng", observer.lat, observer.lng);
 
 	double julian_date = ln_get_julian_day(&date);
 	line_top("data", "├", "┤");
