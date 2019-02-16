@@ -46,6 +46,9 @@
 #define QUERY_URL "http://cdsweb.u-strasbg.fr/cgi-bin/nph-sesame/-oI/A?"
 #define MAX_DATE_LEN 10
 
+#define LINE_BOTTOM \
+	fprintf(stdout, "└─────────────────────────────────────────────────────────────────────────────────────────────────────┘\n");
+
 struct options {
 	float o_lat;
 	float o_lng;
@@ -71,6 +74,19 @@ struct rise_set_t {
 	struct ln_rst_time rst_aa_tw;	/* Sun rise and set, -15 degree below horizon (darkness for amateur astronomy). */
 	struct ln_rst_time rst_a_tw;	/* Sun rise and set, -18 degree below horizon (darkness for professional astronomy). */
 };
+
+static void line_top(const char *title, const char *start, const char *end)
+{
+	uint8_t i;
+
+	fprintf(stdout, "%s", start);
+	for (i = 0; i < 45; i++)
+		fprintf(stdout, "─");
+	fprintf(stdout, " %s ", title);
+	for (i = 0; i < 54 - strlen(title); i++)
+		fprintf(stdout, "─");
+	fprintf(stdout, "%s\n", end);
+}
 
 static void usage(const char *cmd_name, const int rc)
 {
@@ -309,12 +325,17 @@ cleanup:
 	return rc;
 }
 
-static void print_date(char *title, struct ln_zonedate *date)
+static void print_date(const char *title, const struct ln_zonedate *date)
 {
-	fprintf(stdout, "%s %d-%02d-%02d %02d:%02d:%02d\n",
-		title,
-		date->years, date->months, date->days,
-		date->hours, date->minutes, (int)date->seconds);
+	strlen(title) > 20 ?
+		fprintf(stdout, "%-85s%4d-%02d-%02d %02d:%02d:%02d│\n",
+			title,
+			date->years, date->months, date->days,
+			date->hours, date->minutes, (int)date->seconds) :
+		fprintf(stdout, "%-87s%4d-%02d-%02d %02d:%02d:%02d│\n",
+			title,
+			date->years, date->months, date->days,
+			date->hours, date->minutes, (int)date->seconds);
 }
 
 static void display_lunar(const double julian_date, struct ln_lnlat_posn *observer)
@@ -323,7 +344,7 @@ static void display_lunar(const double julian_date, struct ln_lnlat_posn *observ
 	struct ln_zonedate rise, set, transit;
 	struct ln_rst_time rst_lunar;
 
-	fprintf(stdout, "##### moon #####\n");
+	line_top("moon", "├", "┤");
 
 	rc = ln_get_lunar_rst(julian_date, observer, &rst_lunar);
 	if (rc) {
@@ -336,47 +357,50 @@ static void display_lunar(const double julian_date, struct ln_lnlat_posn *observ
 
 		if (rst_lunar.rise < rst_lunar.transit &&
 		    rst_lunar.rise < rst_lunar.set) {
-			print_date("↑ rise\t\t:", &rise);
+			print_date("│↑ rise", &rise);
 			if (rst_lunar.transit < rst_lunar.set) {
-				print_date("↔ transit\t:", &transit);
-				print_date("↓ set\t\t:", &set);
+				print_date("│↔ transit", &transit);
+				print_date("│↓ set", &set);
 			} else {
-				print_date("↓ set\t\t:", &set);
-				print_date("↔ transit\t:", &transit);
+				print_date("│↓ set", &set);
+				print_date("│↔ transit", &transit);
 			}
 		} else if (rst_lunar.set < rst_lunar.rise &&
 			   rst_lunar.set < rst_lunar.transit) {
-			print_date("↓ set\t\t:", &set);
+			print_date("│↓ set", &set);
 			if (rst_lunar.rise < rst_lunar.transit) {
-				print_date("↑ rise\t\t:", &rise);
-				print_date("↔ transit\t:", &transit);
+				print_date("│↑ rise", &rise);
+				print_date("│↔ transit", &transit);
 			} else {
-				print_date("↔ transit\t:", &transit);
-				print_date("↑ rise\t\t:", &rise);
+				print_date("│↔ transit", &transit);
+				print_date("│↑ rise", &rise);
 			}
 		} else {
-			print_date("↔ transit\t:", &transit);
+			print_date("│↔ transit", &transit);
 			if (rst_lunar.set < rst_lunar.rise) {
-				print_date("↓ set\t\t:", &set);
-				print_date("↑ rise\t\t:", &rise);
+				print_date("│↓ set", &set);
+				print_date("│↑ rise", &rise);
 			} else {
-				print_date("↑ rise\t\t:", &rise);
-				print_date("↓ set\t\t:", &set);
+				print_date("│↑ rise", &rise);
+				print_date("│↓ set", &set);
 			}
 		}
 	}
 
-	fprintf(stdout, "disk            : %f (illuminated fraction of the moons disk, value between 0 and 1)\n", ln_get_lunar_disk(julian_date));
+	fprintf(stdout, "│%-93s%f│\n",
+		"disk illuminated fraction ", ln_get_lunar_disk(julian_date));
 #if 0
 	fprintf(stdout, "phase           : %f\n", ln_get_lunar_phase(julian_date));
 	fprintf(stdout, "bright limb     : %f\n", ln_get_lunar_bright_limb(julian_date));
 #endif
 	struct ln_rect_posn moon_pos;
 	ln_get_lunar_geo_posn(julian_date, &moon_pos, 0);
-	fprintf(stdout, "lunar earth dist: %.3f km\n",
+	fprintf(stdout,"│%-87s %.3f km│\n",
+		"distance to earth",
 		sqrt(moon_pos.X * moon_pos.X
 		     + moon_pos.Y * moon_pos.Y
 		     + moon_pos.Z * moon_pos.Z));
+	LINE_BOTTOM;
 }
 
 static void display_sun(const double julian_date, struct ln_lnlat_posn *observer, struct rise_set_t *rise_set)
@@ -385,8 +409,7 @@ static void display_sun(const double julian_date, struct ln_lnlat_posn *observer
 	struct ln_zonedate rise_sun, set_sun;
 	struct ln_zonedate rise_aa, set_aa, rise_a, set_a;
 
-	fprintf(stdout, "##### sun ######\n");
-
+	line_top("sun", "├", "┤");
 	ln_get_body_next_rst_horizon(julian_date, observer,
 				     ln_get_solar_equ_coords, LN_SOLAR_STANDART_HORIZON, &rst_sun);
 
@@ -410,17 +433,18 @@ static void display_sun(const double julian_date, struct ln_lnlat_posn *observer
 	ln_get_local_date(rst_a_tw.set, &set_a);
 
 	if (rst_sun.set < rst_sun.rise) {
-		print_date("↓ set\t\t:", &set_sun);
-		print_date("↑ rise\t\t:", &rise_sun);
+		print_date("│↓ set", &set_sun);
+		print_date("│↑ rise", &rise_sun);
 	} else {
-		print_date("↑ rise\t\t:", &rise_sun);
-		print_date("↓ set\t\t:", &set_sun);
+		print_date("│↑ rise", &rise_sun);
+		print_date("│↓ set", &set_sun);
 	}
 
-	print_date("twilight amateur astro. begin     :", &set_aa);
-	print_date("twilight professional astro. begin:", &set_a);
-	print_date("twilight professional astro. end  :", &rise_a);
-	print_date("twilight amateur astro. end       :", &rise_aa);
+	line_top("twilight", "├", "┤");
+	print_date("│amateur astronomy begin", &set_aa);
+	print_date("│professional astronomy begin", &set_a);
+	print_date("│professional astronomy end", &rise_a);
+	print_date("│amateur astronomy end", &rise_aa);
 
 	memcpy(&rise_set->rst_sun, &rst_sun, sizeof(rst_sun));
 	memcpy(&rise_set->rst_aa_tw, &rst_aa_tw, sizeof(rst_aa_tw));
@@ -437,24 +461,29 @@ static void display_object(struct ln_equ_posn *equ_object,
 	struct ln_rst_time rst_object;
 	bool not_visible = false;
 	struct lnh_equ_posn hpos;
+	char title[64] = {0};
 
 	rc = ln_get_object_next_rst(julian_date, observer, equ_object, &rst_object);
 	ln_equ_to_hequ(equ_object, &hpos);
-	fprintf(stdout, "#### object %s ####\n", object);
-	fprintf(stdout, "(ra, dec) : (%f, %f) (%d:%d:%.3f, %c%d:%d:%.3f) J2000\n",
+
+	snprintf(title, 64, "object '%s'", object);
+	line_top(title, "┌", "┐");
+	fprintf(stdout, "│%-41s(%010.6f, %010.6f) (%02d:%02d:%.3f, %c%02d:%02d:%.3f) J2000│\n",
+		"ra, dec",
 		equ_object->ra, equ_object->dec,
 		hpos.ra.hours, hpos.ra.minutes, hpos.ra.seconds,
 		hpos.dec.neg ? '-' : '+',
 		hpos.dec.degrees, hpos.dec.minutes, hpos.dec.seconds);
 	switch (rc) {
 		case -1 : {
-			fprintf(stdout, "object remains the whole day bellow the horizon\n");
+			fprintf(stdout, "│object remains the whole day bellow the horizon%-54s│\n", " ");
 			not_visible = true;
 			break;
 		}
 		case 1: {
-			fprintf(stdout, "object is circumpolar, that is it remains the whole "
-				"day above the horizon\n");
+			fprintf(stdout, "│object is circumpolar, that is it remains the whole "
+				"%-49s│\n",
+				"day above the horizon");
 			break;
 		}
 		default: {
@@ -464,65 +493,88 @@ static void display_object(struct ln_equ_posn *equ_object,
 
 			if (rst_object.rise < rst_object.transit &&
 			    rst_object.rise < rst_object.set) {
-				print_date("↑ rise   :", &rise);
+				print_date("│↑ rise", &rise);
 				if (rst_object.transit < rst_object.set) {
-					print_date("↔ transit:", &transit);
-					print_date("↓ set    :", &set);
+					print_date("│↔ transit", &transit);
+					print_date("│↓ set", &set);
 				} else {
-					print_date("↓ set    :", &set);
-					print_date("↔ transit:", &transit);
+					print_date("│↓ set", &set);
+					print_date("│↔ transit", &transit);
 				}
 			} else if (rst_object.set < rst_object.rise &&
 				   rst_object.set < rst_object.transit) {
-				print_date("↓ set    :", &set);
+				print_date("│↓ set", &set);
 				if (rst_object.rise < rst_object.transit) {
-					print_date("↑ rise   :", &rise);
-					print_date("↔ transit:", &transit);
+					print_date("│↑ rise", &rise);
+					print_date("│↔ transit", &transit);
 				} else {
-					print_date("↔ transit:", &transit);
-					print_date("↑ rise   :", &rise);
+					print_date("│↔ transit", &transit);
+					print_date("│↑ rise", &rise);
 				}
 			} else {
-				print_date("↔ transit:", &transit);
+				print_date("│↔ transit", &transit);
 				if (rst_object.set < rst_object.rise) {
-					print_date("↓ set    :", &set);
-					print_date("↑ rise   :", &rise);
+					print_date("│↓ set", &set);
+					print_date("│↑ rise", &rise);
 				} else {
-					print_date("↑ rise   :", &rise);
-					print_date("↓ set    :", &set);
+					print_date("│↑ rise", &rise);
+					print_date("│↓ set", &set);
 				}
 			}
 			break;
 		}
 	}
 
-	if (not_visible)
+	if (not_visible) {
+		LINE_BOTTOM;
 		return;
+	}
 
-	if (opt.o_step_jd <= 0)
+	if (opt.o_step_jd <= 0) {
+		LINE_BOTTOM;
 		return;
+	}
 
 	struct ln_hrz_posn hrz_posn;
 	struct ln_zonedate date;
 	struct ln_equ_posn equ_lunar;
 	double jd = rise_set->rst_sun.set;
 
-	fprintf(stdout, "\nairmass\tazimuth\taltitude  date\t     time\tmoon separation\n");
+	fprintf(stdout,
+		"│%104s\n"
+		"├ airmass ──┬── azimuth ──┬── altitude ──┬────  date ────┬──── time ────┬── moon separation (degrees) ┤\n",
+		"│");
 	while (jd < rise_set->rst_sun.rise) {
 		ln_get_local_date(jd, &date);
 		ln_get_hrz_from_equ(equ_object, observer, jd, &hrz_posn);
 		ln_get_lunar_equ_coords(jd, &equ_lunar);
 		if (hrz_posn.alt > 0)
-		fprintf(stdout, "%2.2f \t%4.2f \t%4.2f\t"
-			"%6d-%02d-%02d %02d:%02d:%02d"
-			"\t%f (degrees)\n",
+		fprintf(stdout,
+			"│%5.2f"
+			"%9s"
+			"%8.2f"
+			"%8s"
+			"%8.2f"
+			"%9s"
+			"%6d-%02d-%02d%6s%3s%02d:%02d:%02d"
+			"%6s%3s"
+			"%8.4f%18s│\n",
 			ln_get_airmass(hrz_posn.alt, 750.0),
-			hrz_posn.az, hrz_posn.alt,
+			"│",
+			hrz_posn.az,
+			"│",
+			hrz_posn.alt,
+			"│",
 			date.years, date.months, date.days,
+			"│", " ",
 			date.hours, date.minutes, (int)date.seconds,
-			ln_get_angular_separation(equ_object, &equ_lunar));
+			"│", " ",
+			ln_get_angular_separation(equ_object, &equ_lunar),
+			" ");
 		jd += opt.o_step_jd;
 	};
+	fprintf(stdout,
+		"└───────────┴─────────────┴──────────────┴───────────────┴──────────────┴─────────────────────────────┘\n");
 }
 
 int main(int argc, char *argv[])
@@ -544,15 +596,17 @@ int main(int argc, char *argv[])
 	if (rc < 0)
 		fprintf(stderr, "parse_date failed, use local system date/time\n");
 
-	fprintf(stdout, "##### observer #\n"
-		"(lat,lng)       : (%f,%f)\n", observer.lat, observer.lng);
+	line_top("observer", "┌", "┐");
+	fprintf(stdout,
+		"│%-83s%f,%f│\n", "lat,lng", observer.lat, observer.lng);
 
 	double julian_date = ln_get_julian_day(&date);
-	fprintf(stdout, "##### date #####\n"
-		"julian          : %f\n", julian_date);
-	fprintf(stdout, "%s %d-%02d-%02d %02d:%02d:%02d\n",
-		"calendar (LT)   :",
-		date.years, date.months, date.days,
+	line_top("data", "├", "┤");
+	fprintf(stdout,
+		"│%-87s%f│\n", "julian", julian_date);
+	fprintf(stdout,
+		"│%-82s%d-%02d-%02d %02d:%02d:%02d│\n",
+		"calendar (LT)", date.years, date.months, date.days,
 		date.hours, date.minutes, (int)date.seconds);
 
 	/* Set time of current date to morning 08:00:00, to correctly calculate set and rise of the current and next day.*/
