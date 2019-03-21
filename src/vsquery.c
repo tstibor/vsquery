@@ -43,7 +43,7 @@
 #define PACKAGE_VERSION "NA"
 #endif
 
-#define QUERY_URL "http://cdsweb.u-strasbg.fr/cgi-bin/nph-sesame/-oI/A?"
+#define QUERY_URL "http://cdsweb.u-strasbg.fr/cgi-bin/nph-sesame/-oI?"
 #define MAX_DATE_LEN 10
 
 #define LINE_BOTTOM \
@@ -254,7 +254,7 @@ static int get_ra_dec(const char *str, double *ra, double *dec)
 		if (begin_str)
 			found[0] = 1;
 		else {
-			begin_str = strstr(token, "#=S0=Simbad");
+			begin_str = strstr(token, "#=Sic=Simbad");
 			if (begin_str)
 				found[0] = 1;
 		}
