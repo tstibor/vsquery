@@ -254,7 +254,7 @@ static int get_ra_dec(const char *str, double *ra, double *dec)
 		if (begin_str)
 			found[0] = 1;
 		else {
-			begin_str = strstr(token, "#=Sic=Simbad");
+			begin_str = strstr(token, "#=Sc=Simbad");
 			if (begin_str)
 				found[0] = 1;
 		}
@@ -468,7 +468,7 @@ static void display_object(struct ln_equ_posn *equ_object,
 
 	snprintf(title, 64, "object '%s'", object);
 	line_top(title, "┌", "┐");
-	fprintf(stdout, "│%-41s(%010.6f, %010.6f) (%02d:%02d:%.3f, %c%02d:%02d:%.3f) J2000│\n",
+	fprintf(stdout, "│%-41s(%010.6f, %010.6f) (%02d:%02d:%06.3f, %c%02d:%02d:%06.3f) J2000│\n",
 		"ra, dec",
 		equ_object->ra, equ_object->dec,
 		hpos.ra.hours, hpos.ra.minutes, hpos.ra.seconds,
@@ -577,6 +577,52 @@ static void display_object(struct ln_equ_posn *equ_object,
 		"└───────────┴─────────────┴──────────────┴───────────────┴──────────────┴─────────────────────────────┘\n");
 }
 
+int parse_ra_dec(const char *deg_ra_dec, double *ra, double *dec)
+{
+	if (!deg_ra_dec)
+		return -EINVAL;
+
+	const char *delim = " ";
+	char *token;
+	uint8_t n_token = 0;
+	char *end = NULL;
+	char *str;
+	int rc = -EINVAL;
+
+	str = strdup(deg_ra_dec);
+	token = strtok((char *)str, delim);
+	if (!token)
+		goto out;
+
+	while (token != NULL) {
+
+		if (n_token == 0) {
+			*ra = strtod(token, &end);
+			if (*end != '\0')
+				goto out;
+		} else if (n_token == 1) {
+			*dec = strtod(token, &end);
+			if (*end != '\0')
+				goto out;
+		} else
+			goto out;
+
+		token = strtok(NULL, delim);
+		n_token++;
+	}
+
+out:
+	if (n_token == 2 &&
+	    *ra >= 0 && *ra <= 360 &&
+	    *dec >= -90.0f && *dec <= 90.0f)
+		rc = 0;
+
+	if (str)
+		free(str);
+
+	return rc;
+}
+
 int main(int argc, char *argv[])
 {
 	int rc;
@@ -620,11 +666,17 @@ int main(int argc, char *argv[])
 	struct ln_equ_posn equ_object; /* right ascension, declination  of <object 1> <object 2> ... <object N> */
 	while (optind < argc) {
 
-		rc = query_catalog(argv[optind], &equ_object.ra, &equ_object.dec);
-		if (rc)
-			fprintf(stderr, "no results found for object '%s'\n", argv[optind]);
-		else
+		/* Try parsing objects in format "degree_ra degree_dec". */
+		rc = parse_ra_dec(argv[optind], &equ_object.ra, &equ_object.dec);
+		if (!rc)
 			display_object(&equ_object, &observer, julian_date, argv[optind], &rise_set);
+		else {
+			rc = query_catalog(argv[optind], &equ_object.ra, &equ_object.dec);
+			if (rc)
+				fprintf(stderr, "no results found for object '%s'\n", argv[optind]);
+			else
+				display_object(&equ_object, &observer, julian_date, argv[optind], &rise_set);
+		}
 		optind++;
 	}
 
