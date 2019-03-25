@@ -243,6 +243,8 @@ static int get_ra_dec(const char *str, double *ra, double *dec)
 	char *token = NULL;
 	bool found[2] = {0};
 
+	printf("%s\n", str);
+
 	token = strtok((char *)str, nl_delim);
 	if (!token)
 		return -1;
@@ -254,7 +256,7 @@ static int get_ra_dec(const char *str, double *ra, double *dec)
 		if (begin_str)
 			found[0] = 1;
 		else {
-			begin_str = strstr(token, "#=Sc=Simbad");
+			begin_str = strstr(token, "Simbad");
 			if (begin_str)
 				found[0] = 1;
 		}
