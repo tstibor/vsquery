@@ -243,8 +243,6 @@ static int get_ra_dec(const char *str, double *ra, double *dec)
 	char *token = NULL;
 	bool found[2] = {0};
 
-	printf("%s\n", str);
-
 	token = strtok((char *)str, nl_delim);
 	if (!token)
 		return -1;
