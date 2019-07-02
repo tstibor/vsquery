@@ -186,6 +186,13 @@ static long validate_number(const char *str)
 	return val;
 }
 
+static bool is_negative(const struct ln_zonedate *zd)
+{
+	return (zd->years < 0 || zd->months < 0 ||
+		zd->days < 0 || zd->hours < 0 ||
+		zd->minutes < 0 || zd->seconds < 0);
+}
+
 static int parse_date(const char *str, struct ln_date *date)
 {
 	const char *delim = "-";
@@ -327,6 +334,11 @@ cleanup:
 
 static void print_date(const char *title, const struct ln_zonedate *date)
 {
+	if (is_negative(date)) {
+		fprintf(stdout, "%-102s%s", title, "NA│\n");
+		return;
+	}
+
 	strlen(title) > 20 ?
 		fprintf(stdout, "%-85s%4d-%02d-%02d %02d:%02d:%02d│\n",
 			title,
