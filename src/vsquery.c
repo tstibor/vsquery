@@ -43,6 +43,10 @@
 #define PACKAGE_VERSION "NA"
 #endif
 
+#ifndef LN_SOLAR_AMATEUR_ASTRONOMICAL_HORIZON
+#define LN_SOLAR_AMATEUR_ASTRONOMICAL_HORIZON -15.0
+#endif
+
 #define QUERY_URL "http://cdsweb.u-strasbg.fr/cgi-bin/nph-sesame/-oI?"
 #define MAX_DATE_LEN 10
 
@@ -427,10 +431,12 @@ static void display_sun(const double julian_date, struct ln_lnlat_posn *observer
 
 	/* Amateur astronomical twilight (the sky is dark enough for most astronomical observations) */
 	ln_get_body_next_rst_horizon(julian_date, observer,
-				     ln_get_solar_equ_coords, -15, &rst_aa_tw);
+				     ln_get_solar_equ_coords, LN_SOLAR_AMATEUR_ASTRONOMICAL_HORIZON,
+				     &rst_aa_tw);
 	/* Astronomical twilight (the sky is completely dark) */
 	ln_get_body_next_rst_horizon(julian_date, observer,
-				     ln_get_solar_equ_coords, -18, &rst_a_tw);
+				     ln_get_solar_equ_coords, LN_SOLAR_ASTRONOMICAL_HORIZON,
+				     &rst_a_tw);
 
 	/* Sun */
 	ln_get_local_date(rst_sun.rise, &rise_sun);
@@ -452,11 +458,22 @@ static void display_sun(const double julian_date, struct ln_lnlat_posn *observer
 		print_date("│↓ set", &set_sun);
 	}
 
+	/* Length of night. */
+	fprintf(stdout, "│night length (hours) %80.3f│\n",
+		fabs(rst_sun.set - rst_sun.rise) * 24.0);
+
 	line_top("twilight", "├", "┤");
 	print_date("│amateur astronomy begin", &set_aa);
+	print_date("│amateur astronomy end", &rise_aa);
+	/* Length of amateur astronomy night. */
+	fprintf(stdout, "│amateur astronomy night length (hours) %62.3f│\n",
+		fabs(rst_aa_tw.set - rst_aa_tw.rise) * 24.0);
+
 	print_date("│professional astronomy begin", &set_a);
 	print_date("│professional astronomy end", &rise_a);
-	print_date("│amateur astronomy end", &rise_aa);
+	/* Length of professional astronomy night. */
+	fprintf(stdout, "│professional astronomy night length (hours) %57.3f│\n",
+		fabs(rst_a_tw.set - rst_a_tw.rise) * 24.0);
 
 	memcpy(&rise_set->rst_sun, &rst_sun, sizeof(rst_sun));
 	memcpy(&rise_set->rst_aa_tw, &rst_aa_tw, sizeof(rst_aa_tw));
